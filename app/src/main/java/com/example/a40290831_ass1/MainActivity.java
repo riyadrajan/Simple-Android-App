@@ -14,22 +14,38 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.util.ArrayList;
-
+/**
+ * ===== MVC ARCHITECTURE - VIEW =====
+ * 
+ * Main Activity (View) that handles the primary user interface.
+ * Focuses purely on UI interactions and display logic.
+ * 
+ * Responsibilities:
+ * - Display counter buttons with custom names
+ * - Show total count
+ * - Handle button click events
+ * - Navigate to Settings and Data activities
+ * - Update UI when data changes
+ * 
+ * MVC Interactions:
+ * - Uses CounterController for all business logic
+ * - No direct access to Models or SharedPreferences
+ * - Refreshes data via controller when resuming from other activities
+ */
 public class MainActivity extends AppCompatActivity {
 
+    // UI Components
     protected TextView showCount;
-    static int totalCount;
     protected Button settings;
     protected Button data;
     protected Button buttonA;
-
-    protected int buttonACount;
     protected Button buttonB;
-    protected int buttonBCount;
     protected Button buttonC;
-    protected int buttonCCount;
-    ArrayList<String> eventHistory = new ArrayList<>();
+    String name1, name2, name3;
+    
+    // MVC Controller
+    private CounterController controller;
+
 
 
     @Override
@@ -42,6 +58,9 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        
+        // Initialize MVC Controller
+        controller = new CounterController(this);
         setupUI();
     }
 
@@ -50,34 +69,45 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
     }
 
-    //use this to update/initialize components
+    //used to update/initialize components
     @Override
     protected void onResume() {
         super.onResume();
 
-        SharedPreferenceHelper helper = new SharedPreferenceHelper(MainActivity.this);
-
-        String name1 = helper.getCounter1Name();
-        String name2 = helper.getCounter2Name();
-        String name3 = helper.getCounter3Name();
-
-        if (name1 == null || name2 == null || name3 == null) {
+        // IMPORTANT: Refresh controller data in case it was changed in SettingsActivity
+        // This ensures button names and counts update immediately when returning from settings
+        controller.refreshData();
+        
+        // Check if settings are configured via controller
+        if (!controller.areNamesSet()) {
             goToSettingsActivity();
         } else {
-            buttonA.setText(name1);
-            buttonB.setText(name2);
-            buttonC.setText(name3);
+            updateUI();
+            setupButtonListeners();
         }
+    }
 
-        //set functionality to the buttons (increase total count)
+//Updates the UI with current data from Controller
+    private void updateUI() {
+        Settings settingsObj = controller.getSettings(); //returns settings obj
+        CounterData counterData = controller.getCounterData();
+        
+        // Update button texts with event names
+        buttonA.setText(settingsObj.getCounter1Name());
+        buttonB.setText(settingsObj.getCounter2Name());
+        buttonC.setText(settingsObj.getCounter3Name());
+        
+        // Update total count
+        showCount.setText(controller.getFormattedTotalCount());
+    }
+
+//Settings up button click functionality (increments) using the controller
+    private void setupButtonListeners() {
         buttonA.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (totalCount <= helper.getMaxCount()) {
-                    buttonACount ++;
-                    totalCount ++;
-                    eventHistory.add("1");
-                    showCount.setText("Total Count: " + totalCount);
+                if (controller.incrementButtonA()) {
+                    showCount.setText(controller.getFormattedTotalCount());
                 }
             }
         });
@@ -85,11 +115,8 @@ public class MainActivity extends AppCompatActivity {
         buttonB.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (totalCount <= helper.getMaxCount()) {
-                    buttonBCount ++;
-                    totalCount ++;
-                    eventHistory.add("2");
-                    showCount.setText("Total Count: " + totalCount);
+                if (controller.incrementButtonB()) {
+                    showCount.setText(controller.getFormattedTotalCount());
                 }
             }
         });
@@ -97,15 +124,11 @@ public class MainActivity extends AppCompatActivity {
         buttonC.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (totalCount <= helper.getMaxCount()) {
-                    buttonCCount += 1;
-                    totalCount +=1;
-                    eventHistory.add("3");
-                    showCount.setText("Total Count: " + totalCount);
+                if (controller.incrementButtonC()) {
+                    showCount.setText(controller.getFormattedTotalCount());
                 }
             }
         });
-
     }
 
 
@@ -153,14 +176,8 @@ public class MainActivity extends AppCompatActivity {
     }
     private void goToDataActivity() {
         Intent intent = new Intent(MainActivity.this, DataActivity.class);
-        //to access the data from here in dataActivity
-        intent.putExtra("buttonA_count", buttonACount);
-        intent.putExtra("buttonB_count", buttonBCount);
-        intent.putExtra("buttonC_count", buttonCCount);
-        intent.putExtra("total_count", totalCount);
-        intent.putStringArrayListExtra("event_history", eventHistory);
-        startActivity(intent);
-
+        // In MVC pattern, DataActivity will get data directly from controller
+        // No need to pass data via intent extras anymore
         startActivity(intent);
     }
 

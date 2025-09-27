@@ -14,10 +14,25 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.util.ArrayList;
-
-//need access to totalCount (MainActivity)
-
+/**
+ * ===== MVC ARCHITECTURE - VIEW =====
+ * 
+ * Data Activity (View) that handles data visualization and statistics display.
+ * Focuses on displaying counter data, statistics, and event history.
+ * 
+ * Responsibilities:
+ * - Display individual counter statistics
+ * - Show total event count
+ * - Display event history in ListView
+ * - Handle toggle between custom names and counter numbers
+ * - Provide action bar menu for display options
+ * 
+ * MVC Interactions:
+ * - Uses CounterController for all data retrieval
+ * - Gets formatted display strings from controller
+ * - Uses controller's event history display methods
+ * - No direct access to Models or SharedPreferences
+ */
 public class DataActivity extends AppCompatActivity {
 
     protected TextView textA;
@@ -26,11 +41,11 @@ public class DataActivity extends AppCompatActivity {
     protected TextView textTotal;
     protected ListView showEvents;
 
-    int aCount, bCount, cCount, total;
-    String name1, name2, name3, totalStr;
-
-    boolean toggleMode = true;
-    ArrayList<String> eventHistory = new ArrayList<>();
+    // MVC Controller
+    private CounterController controller;
+    
+    // Toggle mode for display
+    private boolean showNames = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +63,9 @@ public class DataActivity extends AppCompatActivity {
         assert getSupportActionBar() != null;
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle("Data Activity");
+        
+        // Initialize MVC Controller
+        controller = new CounterController(this);
         setupUI();
     }
 
@@ -65,66 +83,33 @@ public class DataActivity extends AppCompatActivity {
 
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
-        // if true show Event names, else show counter 1, counter 2, ...
-        if (id == R.id.action_toggle && toggleMode == true) {
-            toggleToCounter(toggleMode);
-            toggleMode = false;
-        } else {
-            toggleToCounter(toggleMode);
-            toggleMode = true;
+        // Toggle between showing custom names and counter numbers
+        if (id == R.id.action_toggle) {
+            showNames = !showNames;
+            updateDisplay();
         }
         return super.onOptionsItemSelected(item);
     }
-    private void setCounts(String A, String B, String C, String totalStr) {
-        if (aCount == 1){
-            A = A + aCount + " event";
-        } else{
-            A = A + aCount + " events";
-        }
-
-        if (bCount == 1){
-            B = B + bCount + " event";
-        } else {
-            B = B + bCount + " events";
-        }
-
-        if (cCount == 1){
-            C = C + cCount + " event";
-        } else {
-            C = C + cCount + " events";
-        }
-
-        textA.setText(A);
-        textB.setText(B);
-        textC.setText(C);
-        textTotal.setText(totalStr);
+    /**
+     * Update all display elements using controller data
+     */
+    private void updateDisplay() {
+        // Update counter text displays
+        textA.setText(controller.getFormattedCounterText(1, showNames));
+        textB.setText(controller.getFormattedCounterText(2, showNames));
+        textC.setText(controller.getFormattedCounterText(3, showNames));
+        textTotal.setText("Total events: " + controller.getCounterData().getTotalCount());
+        
+        // Update event history list
+        updateEventList();
     }
 
-    public void toggleToCounter(boolean toggle) {
-        if (toggle) {
-            setCounts("Counter 1: ", "Counter 2: ", "Counter 3: ", totalStr);
-            updateList(false);
-        } else {
-            setCounts(name1 + ": ", name2 + ":  ", name3+ ": ", totalStr);
-            updateList(true);
-        }
-
-    }
-
-    public void updateList(boolean showNames) {
-        ArrayList<String> displayList = new ArrayList<>();
-
-        for (String event : eventHistory) {
-            if (showNames) {
-                if (event.equals("1")) displayList.add(name1);
-                else if (event.equals("2")) displayList.add(name2);
-                else if (event.equals("3")) displayList.add(name3);
-            } else {
-                displayList.add(String.valueOf(event));
-            }
-        }
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, displayList);
+    /**
+     * Update the ListView with event history
+     */
+    private void updateEventList() {
+        String[] displayArray = controller.getEventHistoryDisplay(showNames);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, displayArray);
         showEvents.setAdapter(adapter);
     }
 
@@ -136,23 +121,7 @@ public class DataActivity extends AppCompatActivity {
         textTotal = findViewById(R.id.totalCount);
         showEvents = findViewById(R.id.showEvents);
 
-        SharedPreferenceHelper helper = new SharedPreferenceHelper(this);
-        name1 = helper.getCounter1Name();
-        name2 = helper.getCounter2Name();
-        name3 = helper.getCounter3Name();
-        total = helper.getMaxCount();
-
-        //Retrieve intent values
-        aCount = getIntent().getIntExtra("buttonA_count", 0);
-        bCount = getIntent().getIntExtra("buttonB_count", 0);
-        cCount = getIntent().getIntExtra("buttonC_count", 0);
-        total = getIntent().getIntExtra("total_count", 0);
-        eventHistory = getIntent().getStringArrayListExtra("event_history");
-        if (eventHistory == null) {
-            eventHistory = new ArrayList<>(); // fallback to empty list
-        }
-        totalStr = "Total events: " + total;
-        // Show counts immediately
-        toggleToCounter(false);
+        // In MVC pattern, get data directly from controller instead of intent extras
+        updateDisplay();
     }
 }
