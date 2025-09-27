@@ -14,6 +14,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity {
 
     protected TextView showCount;
@@ -21,9 +23,13 @@ public class MainActivity extends AppCompatActivity {
     protected Button settings;
     protected Button data;
     protected Button buttonA;
-    protected Button buttonB;
-    protected Button buttonC;
 
+    protected int buttonACount;
+    protected Button buttonB;
+    protected int buttonBCount;
+    protected Button buttonC;
+    protected int buttonCCount;
+    ArrayList<String> eventHistory = new ArrayList<>();
 
 
     @Override
@@ -68,7 +74,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (totalCount <= helper.getMaxCount()) {
-                    totalCount += 1;
+                    buttonACount ++;
+                    totalCount ++;
+                    eventHistory.add("1");
                     showCount.setText("Total Count: " + totalCount);
                 }
             }
@@ -78,7 +86,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (totalCount <= helper.getMaxCount()) {
-                    totalCount += 1;
+                    buttonBCount ++;
+                    totalCount ++;
+                    eventHistory.add("2");
                     showCount.setText("Total Count: " + totalCount);
                 }
             }
@@ -88,7 +98,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (totalCount <= helper.getMaxCount()) {
-                    totalCount += 1;
+                    buttonCCount += 1;
+                    totalCount +=1;
+                    eventHistory.add("3");
                     showCount.setText("Total Count: " + totalCount);
                 }
             }
@@ -126,10 +138,30 @@ public class MainActivity extends AppCompatActivity {
                 goToSettingsActivity();
             }
         });
+
+        data.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                goToDataActivity();
+            }
+        });
     }
 
     private void goToSettingsActivity() {
         Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
         startActivity(intent);
     }
+    private void goToDataActivity() {
+        Intent intent = new Intent(MainActivity.this, DataActivity.class);
+        //to access the data from here in dataActivity
+        intent.putExtra("buttonA_count", buttonACount);
+        intent.putExtra("buttonB_count", buttonBCount);
+        intent.putExtra("buttonC_count", buttonCCount);
+        intent.putExtra("total_count", totalCount);
+        intent.putStringArrayListExtra("event_history", eventHistory);
+        startActivity(intent);
+
+        startActivity(intent);
+    }
+
 }
